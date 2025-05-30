@@ -13,5 +13,11 @@ fi
 
 echo "Media directory found, starting streamer..."
 
-# Run the Python streaming manager
-python3 /app/stream_manager.py
+# Check for DYNAMIC_MODE environment variable
+if [ "$DYNAMIC_MODE" = "true" ]; then
+    echo "Using DYNAMIC streaming mode (one episode at a time)"
+    python3 /app/dynamic_stream_manager.py
+else
+    echo "Using CONCAT streaming mode (continuous playlist)"
+    python3 /app/stream_manager.py
+fi

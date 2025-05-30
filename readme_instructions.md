@@ -74,7 +74,7 @@ curl http://localhost:8090/stream.m3u8
 ## Troubleshooting
 
 1. **No video files found:** Make sure your Bob Ross directory is properly mounted
-2. **Stream not accessible:** Check firewall settings and ensure port 8080 is open
+2. **Stream not accessible:** Check firewall settings and ensure port 8090 is open
 3. **Playback issues:** Verify your Tizen app supports HLS streams
 
 ## Stopping the Service

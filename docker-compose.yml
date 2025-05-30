@@ -12,8 +12,9 @@ services:
     restart: unless-stopped
     environment:
       - TZ=America/New_York
+      - DYNAMIC_MODE=false  # Set to false for continuous concat mode
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/stream.m3u8"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8090/stream.m3u8"]
       interval: 30s
       timeout: 10s
       retries: 3

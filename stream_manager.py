@@ -83,7 +83,8 @@ class StreamManager:
         # Test files first
         print("Testing files with ffprobe...")
         valid_files = []
-        for file_path in mp4_files:
+        for i, file_path in enumerate(mp4_files):
+            print(f"Testing file {i+1}/{len(mp4_files)}: {os.path.basename(file_path)}")
             if self.test_file_with_ffprobe(file_path):
                 valid_files.append(file_path)
         
@@ -91,22 +92,35 @@ class StreamManager:
             print("ERROR: No valid video files found!")
             return None
         
+        print(f"Valid files: {len(valid_files)} out of {len(mp4_files)} total")
+        
         # Shuffle the valid files for random order
         shuffled_files = valid_files.copy()
         random.shuffle(shuffled_files)
         
-        print(f"Creating playlist with {len(shuffled_files)} files...")
+        print(f"Creating playlist with {len(shuffled_files)} files in random order...")
+        print("Shuffled order (first 10 files):")
+        for i, file_path in enumerate(shuffled_files[:10]):
+            print(f"  {i+1:2d}. {os.path.basename(file_path)}")
+        if len(shuffled_files) > 10:
+            print(f"  ... and {len(shuffled_files) - 10} more files")
+        
         with open(playlist_path, 'w') as f:
-            for file_path in shuffled_files:
+            for i, file_path in enumerate(shuffled_files):
                 # Escape single quotes and backslashes for FFmpeg
                 escaped_path = file_path.replace("'", "'\"'\"'").replace("\\", "\\\\")
                 f.write(f"file '{escaped_path}'\n")
+                # Add a comment for debugging
+                f.write(f"# {i+1}. {os.path.basename(file_path)}\n")
         
-        # Show playlist content
-        print("Playlist contents:")
+        # Show playlist content (just first few entries)
+        print("\nPlaylist file contents (first 20 lines):")
         with open(playlist_path, 'r') as f:
-            content = f.read()
-            print(content[:1000] + "..." if len(content) > 1000 else content)
+            lines = f.readlines()
+            for i, line in enumerate(lines[:20]):
+                print(f"  {line.strip()}")
+            if len(lines) > 20:
+                print(f"  ... and {len(lines) - 20} more lines")
         
         return playlist_path
     
@@ -208,6 +222,7 @@ class StreamManager:
         print("FFmpeg monitoring started...")
         line_count = 0
         last_progress_time = 0
+        current_file = None
         
         try:
             while self.running and self.current_process.poll() is None:
@@ -231,16 +246,29 @@ class StreamManager:
                 elif any(keyword in lower_line for keyword in ['warning']):
                     print(f"FFmpeg WARNING: {line}")
                 elif 'opening' in lower_line and 'for reading' in lower_line:
+                    # Extract filename from the line
+                    if "'" in line:
+                        filename = line.split("'")[1] if "'" in line else "unknown"
+                        basename = os.path.basename(filename)
+                        if basename != current_file:
+                            current_file = basename
+                            print(f"FFmpeg NOW PLAYING: {basename}")
                     print(f"FFmpeg FILE: {line}")
                 elif 'frame=' in line and 'fps=' in line:
-                    # Print progress every 10 seconds
+                    # Print progress every 30 seconds and include current file
                     current_time = time.time()
-                    if current_time - last_progress_time >= 10:
-                        print(f"FFmpeg PROGRESS: {line}")
+                    if current_time - last_progress_time >= 30:
+                        progress_info = line
+                        if current_file:
+                            progress_info += f" | Playing: {current_file}"
+                        print(f"FFmpeg PROGRESS: {progress_info}")
                         last_progress_time = current_time
                         self.ffmpeg_healthy = True
                 elif 'hls' in lower_line:
                     print(f"FFmpeg HLS: {line}")
+                elif 'input #0' in lower_line and 'from' in lower_line:
+                    # This shows when FFmpeg switches to a new input file
+                    print(f"FFmpeg INPUT: {line}")
                     
         except Exception as e:
             print(f"Error in FFmpeg monitoring: {e}")

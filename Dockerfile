@@ -11,8 +11,9 @@ RUN apk add --no-cache \
 # Create working directory
 WORKDIR /app
 
-# Copy the streaming script
+# Copy the streaming scripts
 COPY stream_manager.py /app/
+COPY dynamic_stream_manager.py /app/
 COPY start.sh /app/
 
 # Make scripts executable
