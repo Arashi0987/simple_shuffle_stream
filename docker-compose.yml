@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  bob-ross-streamer:
+    build: .
+    container_name: bob-ross-hls-streamer
+    ports:
+      - "8090:8090"
+    volumes:
+      - "/Media/TV_Shows/Real_Shows/Bob Ross The Joy of Painting:/media:ro"
+      - /Scripts/tv_stuff/bob_ross_stream:/app
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/stream.m3u8"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
