@@ -1,17 +1,17 @@
 version: '3.8'
 
 services:
-  bob-ross-streamer:
+  bob-ross-streamer: #feel free to rename this
     build: .
-    container_name: bob-ross-hls-streamer
+    container_name: bob-ross-hls-streamer # this one too
     ports:
       - "8090:8090"
     volumes:
-      - "/Media/TV_Shows/Real_Shows/Bob Ross The Joy of Painting:/media:ro"
-      - /Scripts/tv_stuff/bob_ross_stream:/app
+      - "/Media/TV_Shows/Real_Shows/Bob Ross The Joy of Painting:/media:ro" # Set your own show's directory in the place of my bob ross directory
+      - /Scripts/tv_stuff/bob_ross_stream:/app # replace the bob_ross_stream directory with wherever your repo is. or just use .  
     restart: unless-stopped
     environment:
-      - TZ=America/New_York
+      - TZ=America/New_York # feel free to change. only matters for logs
       - DYNAMIC_MODE=false  # Set to false for continuous concat mode
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8090/stream.m3u8"]
