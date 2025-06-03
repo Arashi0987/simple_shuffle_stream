@@ -43,7 +43,7 @@ You can test this in VLC by going to Media > Open Network Stream and inputing th
 
 Check container logs:
 ```bash
-docker logs -f {your_container_name}}
+docker logs -f {your_container_name}
 ```
 
 Check if stream is working:
