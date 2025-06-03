@@ -10,7 +10,6 @@ A Docker container that streams any mp4 episodes as an HLS stream for any device
 - Serves HLS stream on port 8090
 - CORS enabled for web/TV app compatibility
 
-## Quick Start
 ## Configuration
 
 Open up docker-compose.yml and follow any comments to update the fields to match your personal setup
