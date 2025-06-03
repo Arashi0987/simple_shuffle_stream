@@ -10,6 +10,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import signal
 import sys
 import json
+import re
 
 class StreamManager:
     def __init__(self, media_dir="/media", hls_dir="/app/hls"):
@@ -213,8 +214,91 @@ class StreamManager:
         except Exception as e:
             print(f"CRITICAL ERROR starting FFmpeg: {e}")
             return False
-    
+
     def monitor_ffmpeg(self):
+        bad_file = None
+        current_file = None
+
+        # Pattern to match the file currently being played
+        concat_file_re = re.compile(r"Opening '(.*)' for reading")
+        error_detected = False
+
+        for line in self.current_process.stdout:
+            print("FFmpeg:", line.strip())
+
+            # Detect file being processed (assumes verbose FFmpeg logs are enabled)
+            match = concat_file_re.search(line)
+            if match:
+                current_file = match.group(1)
+
+            # Detect critical decoder errors
+            if 'Error submitting packet to decoder' in line or \
+               'Decoder thread returned error' in line or \
+               'Internal bug, should not have happened' in line:
+                error_detected = True
+                bad_file = current_file
+                print("FFmpeg ERROR: Detected critical decode issue!")
+                break
+
+        if error_detected:
+            self.handle_ffmpeg_crash(bad_file)
+
+    def handle_ffmpeg_crash(self, bad_file):
+        print(f"Handling FFmpeg crash due to bad file: {bad_file}")
+
+        # Kill ffmpeg process
+        if self.current_process:
+            self.current_process.kill()
+            self.current_process.wait()
+
+        # Log bad file
+        if bad_file:
+            with open('naughty_list.txt', 'a') as f:
+                f.write(f"{bad_file}\n")
+
+            # Optionally remove or comment the bad file from the playlist
+            #self.remove_from_playlist(bad_file)
+
+        # Restart your stream logic
+        time.sleep(1)  # Brief delay to avoid rapid restart loops
+        print("Restarting main()...")
+        self.run()
+
+    def handle_ffmpeg_crash(self, bad_file):
+        print(f"Handling FFmpeg crash due to bad file: {bad_file}")
+
+        # Kill ffmpeg process
+        if self.current_process:
+            self.current_process.kill()
+            self.current_process.wait()
+
+        # Log bad file
+        if bad_file:
+            with open('naughty_list.txt', 'a') as f:
+                f.write(f"{bad_file}\n")
+
+            # Optionally remove or comment the bad file from the playlist
+            #self.remove_from_playlist(bad_file)
+
+        # Restart your stream logic
+        time.sleep(1)  # Brief delay to avoid rapid restart loops
+        print("Restarting main()...")
+        self.run()  
+        
+    def remove_from_playlist(self, bad_file):
+        try:
+            with open(self.playlist_path, 'r') as f:
+                lines = f.readlines()
+            with open(self.playlist_path, 'w') as f:
+                for line in lines:
+                    if bad_file not in line:
+                        f.write(line)
+                    else:
+                        print(f"Removed bad file from playlist: {bad_file}")
+        except Exception as e:
+            print(f"Error updating playlist: {e}")
+
+    def debug_monitor_ffmpeg(self):
         """Monitor FFmpeg output with detailed logging"""
         if not self.current_process:
             return
@@ -243,6 +327,10 @@ class StreamManager:
                 if any(keyword in lower_line for keyword in ['error', 'failed', 'invalid', 'could not']):
                     print(f"FFmpeg ERROR: {line}")
                     self.ffmpeg_healthy = False
+                    if 'parsing' in lower_line:
+                        with open('naughty_list.txt', a) as file:
+                            file.write(f'{current_file}\n')
+                        main()
                 elif any(keyword in lower_line for keyword in ['warning']):
                     print(f"FFmpeg WARNING: {line}")
                 elif 'opening' in lower_line and 'for reading' in lower_line:
@@ -400,6 +488,10 @@ class StreamManager:
         # Start HTTP server (this will block)
         self.start_http_server()
 
-if __name__ == "__main__":
+def main():
     manager = StreamManager()
     manager.run()
+
+if __name__ == "__main__":
+    main()
+    
