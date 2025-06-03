@@ -11,6 +11,16 @@ A Docker container that streams any mp4 episodes as an HLS stream for any device
 - CORS enabled for web/TV app compatibility
 
 ## Quick Start
+## Configuration
+
+Open up docker-compose.yml and follow any comments to update the fields to match your personal setup
+
+The container automatically:
+- Scans for all `.mp4` files in mounted directory and subdirectories
+- Creates HLS segments with 10-second duration
+- Maintains a 6-segment sliding window
+- Streams at 2Mbps max bitrate with 128k audio
+
 
 **Build and run with Docker Compose:**
    ```bash
@@ -29,13 +39,6 @@ Replace `{your_server_ip}` with the IP address of the machine running the Docker
 
 You can test this in VLC by going to Media > Open Network Stream and inputing that address ^
 
-## Configuration
-
-The container automatically:
-- Scans for all `.mp4` files in mounted directory and subdirectories
-- Creates HLS segments with 10-second duration
-- Maintains a 6-segment sliding window
-- Streams at 2Mbps max bitrate with 128k audio
 
 ## Monitoring
 
